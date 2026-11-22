@@ -1,0 +1,11 @@
+# Fetched by ./setup.sh — not checked in (~37 MB)
+vendor/
+models/
+.tmp/
+
+# Boston Code Camp sponsor assets — not ours to redistribute
+sponsor.jpg
+banner.png
+
+.DS_Store
+*.log

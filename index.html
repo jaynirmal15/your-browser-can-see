@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your Browser Can See</title>
+<style>
+  :root{
+    --bg:#0b0c0e; --panel:#15171a; --line:#2a2e34;
+    --ink:#f6f7f9; --ink2:#aab1bb; --mute:#717a85;
+    --accent:#3b8ae8; --warm:#f07a3f; --ok:#36b87a;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    background:var(--bg); color:var(--ink); overflow:hidden;
+    font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  }
+
+  /* ---------- deck ---------- */
+  .slide{
+    position:fixed; inset:0; display:none; flex-direction:column; justify-content:center;
+    padding:5vh 7vw 9vh; animation:fade .18s ease-out;
+  }
+  .slide[data-demo]{justify-content:flex-start}
+  .slide.on{display:flex}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+
+  h1{font-size:clamp(34px,5.4vw,78px); line-height:1.04; margin:0 0 .35em; letter-spacing:-.025em; font-weight:650}
+  h2{font-size:clamp(26px,3.5vw,50px); line-height:1.1; margin:0 0 .5em; letter-spacing:-.02em; font-weight:620}
+  .lede{font-size:clamp(17px,1.9vw,29px); color:var(--ink2); max-width:22em; line-height:1.4}
+  ul{font-size:clamp(16px,1.75vw,27px); color:var(--ink2); line-height:1.65; padding-left:1.1em; margin:.2em 0; max-width:24em}
+  li{margin-bottom:.35em}
+  li strong{color:var(--ink); font-weight:600}
+  .kicker{font-size:13px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); margin-bottom:1.6em; font-weight:600}
+  .two{display:flex; gap:5vw; align-items:flex-start; flex:1; min-height:0}
+  .two>div{flex:1; min-width:0}
+  .center{align-items:center; justify-content:center; text-align:center}
+  .center .lede{max-width:28em}
+  .huge{font-size:clamp(50px,11vw,150px); font-weight:680; letter-spacing:-.04em; line-height:1; font-variant-numeric:tabular-nums}
+  .accent{color:var(--accent)} .warm{color:var(--warm)} .ok{color:var(--ok)}
+  .note{font-size:clamp(14px,1.3vw,19px); color:var(--mute); margin-top:1.4em; max-width:30em}
+  code{font:.92em ui-monospace,SFMono-Regular,Menlo,monospace; background:#1b1e23; padding:.12em .4em; border-radius:5px; color:#9ecbff}
+  .sponsor{max-width:86%; max-height:66vh; object-fit:contain; border-radius:12px}
+
+  /* ---------- live demo stage ---------- */
+  .demo{flex:1; display:flex; gap:26px; min-height:0; margin-top:.4em}
+  .stage{flex:1; position:relative; background:#000; border-radius:14px; overflow:hidden; min-width:0}
+  .stage video,.stage canvas{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) scaleX(-1);
+    max-width:100%; max-height:100%;
+  }
+  .stage video{visibility:hidden}
+  .side{width:min(280px,24vw); flex:0 0 auto; display:flex; flex-direction:column; gap:18px; overflow:hidden}
+  .metric .label{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--mute); margin-bottom:5px}
+  .metric .val{font-size:clamp(28px,3.2vw,46px); font-weight:650; font-variant-numeric:tabular-nums; line-height:1}
+  .metric .val span{font-size:.38em; color:var(--ink2); font-weight:400; margin-left:4px}
+  .net{border:1px solid var(--ok); border-radius:11px; padding:13px; background:#101a15}
+  .net.bad{border-color:var(--warm); background:#1c1310}
+  .net .val{color:var(--ok)}
+  .net.bad .val{color:var(--warm)}
+  .net p{font-size:12.5px; color:var(--mute); margin:5px 0 0; line-height:1.35}
+  #readout{font-size:clamp(13px,1.25vw,17px); color:var(--ink2); line-height:1.45}
+  #gesturebig{font-size:clamp(24px,2.8vw,40px); font-weight:650; color:var(--warm); line-height:1.15; min-height:1.2em}
+
+  /* rep counter */
+  .rep{text-align:center}
+  .rep .huge{font-size:clamp(56px,8vw,112px); color:var(--ok)}
+  .bar{height:9px; border-radius:5px; background:#22262c; overflow:hidden; margin-top:12px}
+  .bar i{display:block; height:100%; background:var(--accent); width:0%; transition:width .07s linear}
+
+  /* ---------- chrome ---------- */
+  footer{
+    position:fixed; left:0; right:0; bottom:0; height:38px;
+    display:flex; align-items:center; gap:20px; padding:0 22px;
+    background:rgba(11,12,14,.93); border-top:1px solid var(--line);
+    font-size:12.5px; color:var(--mute); backdrop-filter:blur(8px);
+  }
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--mute);display:inline-block;margin-right:7px}
+  .dot.live{background:var(--ok)}
+  #pos{margin-left:auto; font-variant-numeric:tabular-nums}
+  #gbadge{
+    position:fixed; top:18px; right:22px; z-index:40;
+    background:var(--accent); color:#fff; padding:9px 17px; border-radius:999px;
+    font-size:15px; font-weight:600; opacity:0; transition:opacity .15s; pointer-events:none;
+  }
+  #gbadge.show{opacity:1}
+  #err{
+    position:fixed; inset:0; z-index:50; display:none; place-content:center;
+    text-align:center; padding:8vw; background:rgba(11,12,14,.97);
+  }
+  #err h2{color:var(--warm)}
+  #err code{display:block; margin-top:1em; color:var(--ink2); font-size:15px}
+</style>
+</head>
+<body>
+
+<!-- 1 --><section class="slide center">
+  <h1>Your Browser<br>Can See</h1>
+  <p class="lede">Real-time face, pose and gesture detection &mdash; no server, no upload, no inference bill.</p>
+  <p class="note">Jay Suresh Nirmal &nbsp;·&nbsp; Boston Code Camp 41 &nbsp;·&nbsp; #boscc</p>
+</section>
+
+<!-- 2 --><section class="slide">
+  <div class="kicker">The usual shape</div>
+  <div class="two">
+    <div>
+      <h2>Video goes up,<br>an answer comes back</h2>
+      <ul>
+        <li>Every frame crosses the network</li>
+        <li>You pay <strong>per call</strong>, forever</li>
+        <li>Round-trip latency you can feel</li>
+        <li>Someone else's server holds <strong>someone's face</strong></li>
+      </ul>
+    </div>
+    <div>
+      <h2 class="accent">Or it doesn't move at all</h2>
+      <p class="lede">The model runs in the tab. The camera frame never leaves the machine it was captured on.</p>
+      <p class="note">That isn't a privacy slogan. It's an architecture, and it has real limits — we'll get to those.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 3 --><section class="slide" data-demo="face">
+  <div class="kicker">Demo 1 &nbsp;·&nbsp; Face landmarks</div>
+  <h2>478 points, every frame</h2>
+  <div class="demo">
+    <div class="stage" data-stage></div>
+    <div class="side">
+      <div class="metric"><div class="label">Frames per second</div><div class="val" data-fps>—</div></div>
+      <div class="metric"><div class="label">Inference</div><div class="val" data-ms>—<span>ms</span></div></div>
+      <div id="readout" data-readout></div>
+      <div class="net" data-netbox>
+        <div class="label" style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)">Network requests since load</div>
+        <div class="val" data-netcount style="font-size:34px;font-weight:650">0</div>
+        <p>Watch this number while the camera runs.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 --><section class="slide" data-demo="pose">
+  <div class="kicker">Demo 2 &nbsp;·&nbsp; Pose &mdash; a rep counter</div>
+  <h2>33 keypoints, one state machine</h2>
+  <div class="demo">
+    <div class="stage" data-stage></div>
+    <div class="side">
+      <div class="metric rep">
+        <div class="label">Reps</div>
+        <div class="huge" data-reps>0</div>
+        <div class="bar"><i data-repbar></i></div>
+      </div>
+      <div class="metric"><div class="label">Elbow angle</div><div class="val" data-angle>—<span>°</span></div></div>
+      <div class="metric"><div class="label">FPS</div><div class="val" style="font-size:28px" data-fps>—</div></div>
+      <div id="readout" data-readout></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 --><section class="slide">
+  <div class="kicker">What a rep counter actually is</div>
+  <h2>Not machine learning.<br>A threshold and a flag.</h2>
+  <ul>
+    <li>The model gives you <strong>coordinates</strong>, not meaning</li>
+    <li>Angle at the elbow from three points: shoulder, elbow, wrist</li>
+    <li><code>down</code> when &gt; 150°, <code>up</code> when &lt; 55°</li>
+    <li>Count on the transition, not the state — otherwise you count frames</li>
+  </ul>
+  <p class="note">Every "AI feature" built on pose is this: a small amount of geometry sitting on top of a model that only ever reports where things are.</p>
+</section>
+
+<!-- 6 --><section class="slide" data-demo="gesture">
+  <div class="kicker">Demo 3 &nbsp;·&nbsp; Hand gestures</div>
+  <h2>21 landmarks &rarr; a label</h2>
+  <div class="demo">
+    <div class="stage" data-stage></div>
+    <div class="side">
+      <div id="gesturebig" data-gesturebig></div>
+      <div class="metric"><div class="label">Confidence</div><div class="val" data-conf>—<span>%</span></div></div>
+      <div class="metric"><div class="label">FPS</div><div class="val" style="font-size:28px" data-fps>—</div></div>
+      <div id="readout" data-readout></div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 --><section class="slide center">
+  <div class="kicker">And now</div>
+  <h2>I'm not touching the keyboard<br>for the rest of this talk</h2>
+  <p class="lede"><strong class="accent">🖐 palm</strong> or <strong class="accent">👍 thumbs up</strong> forward<br><strong class="warm">✊ fist</strong> or <strong class="warm">👎 thumbs down</strong> back</p>
+  <p class="note">Gesture control stays on from here.</p>
+</section>
+
+<!-- 8 --><section class="slide">
+  <div class="kicker">The runtime question</div>
+  <h2>WebAssembly or WebGPU?</h2>
+  <div class="two">
+    <div>
+      <h2 style="font-size:clamp(20px,2.2vw,30px)" class="accent">WASM + SIMD</h2>
+      <ul style="font-size:clamp(15px,1.5vw,22px)">
+        <li>Works essentially everywhere</li>
+        <li>CPU-bound — competes with your app</li>
+        <li>Predictable, unexciting, fine</li>
+      </ul>
+    </div>
+    <div>
+      <h2 style="font-size:clamp(20px,2.2vw,30px)" class="warm">WebGPU</h2>
+      <ul style="font-size:clamp(15px,1.5vw,22px)">
+        <li>Much faster when present</li>
+        <li>Still uneven across browsers and drivers</li>
+        <li>Falls back — so you need the fallback to be good</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">Pick the delegate at runtime, measure on the oldest machine you care about, and ship the fallback path as the one you actually tested.</p>
+</section>
+
+<!-- 9 --><section class="slide">
+  <div class="kicker">The scheduling question</div>
+  <h2>Don't run inference<br>on every frame</h2>
+  <ul>
+    <li>60 fps of camera does not need 60 fps of model</li>
+    <li>Gate on <code>video.currentTime</code> — the same frame twice is wasted work</li>
+    <li>Faces move slowly. <strong>10–15 Hz</strong> looks live to a human</li>
+    <li>Keep drawing at full rate; interpolate between results</li>
+    <li>Heavy work belongs off the main thread, or the page stops responding</li>
+  </ul>
+</section>
+
+<!-- 10 --><section class="slide">
+  <div class="kicker">Being honest about it</div>
+  <h2>When a server is still<br>the right answer</h2>
+  <ul>
+    <li><strong>Accuracy you can defend.</strong> Lite models are lite</li>
+    <li><strong>Battery.</strong> Continuous inference is a real draw on a laptop and brutal on a phone</li>
+    <li><strong>Consistency.</strong> You control one server; you do not control their GPU</li>
+    <li><strong>Anything you must audit</strong> — you can't log what you never received</li>
+    <li><strong>Models too large to ship.</strong> 20 MB is fine. 2 GB is not</li>
+  </ul>
+  <p class="note">On-device wins where the data is sensitive, the volume is high, and "good enough, instantly, free" beats "excellent, eventually, metered."</p>
+</section>
+
+<!-- 11 --><section class="slide center">
+  <h2>The pattern</h2>
+  <p class="lede">Load a model once. Gate inference on new frames. Draw every frame.<br>Read coordinates, not meaning. Measure on the slow machine.</p>
+  <p class="note">Fitness tools · accessibility · hands-free interfaces · anything where the video should not leave the room.</p>
+</section>
+
+<!-- 12 --><section class="slide center">
+  <h2>Thank you to our sponsors</h2>
+  <img class="sponsor" id="sponsor" alt="Boston Code Camp 41 sponsors">
+  <p class="note" id="sponsorfallback" style="display:none">Drop <code>sponsor.jpg</code> in this folder to show the sponsor slide.</p>
+</section>
+
+<!-- 13 --><section class="slide center">
+  <h1>Thank you</h1>
+  <p class="lede">Jay Suresh Nirmal</p>
+  <p class="note">Code and slides: this page. Questions?<br>#boscc</p>
+</section>
+
+<div id="gbadge"></div>
+<div id="err"><div>
+  <h2>Camera unavailable</h2>
+  <p id="errmsg"></p>
+  <code>Serve over http://localhost — getUserMedia needs a secure context.</code>
+</div></div>
+
+<footer>
+  <span><span class="dot" id="dot"></span><span id="status">starting</span></span>
+  <span id="backend"></span>
+  <span id="hint">← → or space to advance · G toggles gesture control · F fullscreen</span>
+  <span id="pos"></span>
+</footer>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>
